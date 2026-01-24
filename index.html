@@ -274,11 +274,58 @@
             }, 600);
         }
 
+        // --- HÀM TẠO TƯỜNG GỖ (WOOD TEXTURE) ---
         function createWallTexture(colorCode) {
-            const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
-            const ctx = canvas.getContext('2d'); ctx.fillStyle = colorCode; ctx.fillRect(0,0,512,512);
-            for(let i=0; i<3000; i++) { ctx.fillStyle = 'rgba(0,0,0,0.04)'; ctx.fillRect(Math.random()*512, Math.random()*512, 2, 2); }
-            const tex = new THREE.CanvasTexture(canvas); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(4, 2);
+            const canvas = document.createElement('canvas'); 
+            canvas.width = 1024; canvas.height = 1024; // Tăng độ phân giải cho nét
+            const ctx = canvas.getContext('2d');
+            
+            // 1. Màu nền gỗ cơ bản (Màu nâu vàng ấm áp)
+            ctx.fillStyle = "#e3cca8"; 
+            ctx.fillRect(0, 0, 1024, 1024);
+
+            // 2. Vẽ từng thanh gỗ ngang
+            const plankHeight = 128; // Chiều cao mỗi thanh gỗ
+            
+            for (let y = 0; y < 1024; y += plankHeight) {
+                // Tạo độ lệch màu nhẹ giữa các thanh gỗ để nhìn tự nhiên
+                const tint = Math.random() * 20 - 10;
+                const r = 210 + tint;
+                const g = 180 + tint;
+                const b = 140 + tint;
+                
+                ctx.fillStyle = `rgb(${r},${g},${b})`;
+                ctx.fillRect(0, y, 1024, plankHeight - 4); // -4 để tạo khe hở
+
+                // 3. Vẽ vân gỗ (Noise & Streaks)
+                for (let i = 0; i < 400; i++) {
+                    // Vẽ các vệt vân gỗ ngang sẫm màu
+                    ctx.fillStyle = `rgba(101, 67, 33, ${0.05 + Math.random() * 0.1})`;
+                    const x = Math.random() * 1024;
+                    const w = 50 + Math.random() * 200; // Độ dài vân
+                    const h = 2 + Math.random() * 3;    // Độ dày vân
+                    ctx.fillRect(x, y + Math.random() * plankHeight, w, h);
+                }
+
+                // 4. Vẽ khe hở giữa các thanh gỗ (Màu nâu đậm)
+                ctx.fillStyle = "#5d4037";
+                ctx.fillRect(0, y + plankHeight - 4, 1024, 4);
+                
+                // Vẽ đinh tán ở 2 đầu thanh gỗ (trang trí)
+                ctx.fillStyle = "rgba(0,0,0,0.2)";
+                ctx.beginPath(); ctx.arc(50, y + plankHeight/2, 3, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(974, y + plankHeight/2, 3, 0, Math.PI*2); ctx.fill();
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping; 
+            tex.wrapT = THREE.RepeatWrapping;
+            // Lặp lại texture để vân gỗ nhỏ lại cho vừa mắt
+            tex.repeat.set(3, 2); 
+            
+            // Chỉnh màu sắc texture cho khớp với ánh sáng mong muốn
+            tex.colorSpace = THREE.SRGBColorSpace;
+            
             return tex;
         }
         function createFloorTexture(isLobby) {
