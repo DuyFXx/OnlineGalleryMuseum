@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bảo Tàng Lịch Sử</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; touch-action: none; user-select: none; }
+        
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+        }
+
+        #back-btn { display: none; }
+        
+        #instruction-overlay {
+            position: absolute; top: 20px; right: 20px; text-align: right;
+            color: #fff; font-size: 13px; pointer-events: none; z-index: 5; font-weight: 700;
+            text-shadow: 1px 1px 2px black; background: rgba(0,0,0,0.6);
+            padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        #joystick-area {
+            position: absolute; bottom: 40px; left: 40px; width: 160px; height: 160px;
+            z-index: 20; pointer-events: auto;
+        }
+        .joy-btn {
+            position: absolute; width: 50px; height: 50px;
+            background: rgba(255, 255, 255, 0.3); border: 2px solid rgba(255,255,255,0.6);
+            border-radius: 50%; cursor: pointer; display: flex;
+            justify-content: center; align-items: center; font-size: 24px; font-weight: bold; color: #fff;
+            -webkit-tap-highlight-color: transparent; transition: background 0.1s;
+        }
+        .joy-btn:active { background: #b30000; border-color: #fff; }
+        #btn-up { top: 0; left: 55px; }
+        #btn-down { bottom: 0; left: 55px; }
+        #btn-left { top: 55px; left: 0; }
+        #btn-right { top: 55px; right: 0; }
+
+        #zoom-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 100;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            pointer-events: auto;
+        }
+        #zoom-container {
+            display: flex; flex-direction: column; align-items: center;
+            max-width: 90%; max-height: 90%; pointer-events: auto; position: relative;
+        }
+        .zoom-content { max-width: 100%; max-height: 55vh; border: 4px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+        #zoom-caption {
+            color: #333; margin-top: 15px; text-align: center; width: 100%;
+            font-size: 16px; line-height: 1.5; background: #fff; padding: 15px; border-radius: 6px;
+            max-height: 25vh; overflow-y: auto;
+        }
+        #close-modal-btn {
+            margin-top: 15px; padding: 12px 40px; background: #b30000; color: white;
+            border: none; font-weight: 700; cursor: pointer; font-size: 14px; text-transform: uppercase;
+            border-radius: 4px; 
+        }
+
+        #transition-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: black; z-index: 200; display: flex; 
+            justify-content: center; align-items: center; color: white;
+            font-size: 20px; font-weight: bold; opacity: 1; pointer-events: none;
+            transition: opacity 0.8s;
+        }
+        
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+            background: rgba(255, 255, 255, 0.8); border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 15;
+            box-shadow: 0 0 4px black;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="transition-screen">ĐANG KHỞI TẠO...</div>
+    <div id="crosshair"></div>
+
+    <div id="instruction-overlay">
+        <b>HƯỚNG DẪN DI CHUYỂN</b><br>
+        Máy tính: Sử dụng phím W A S D<br>
+        Điện Thoại: Sử dụng nút ảo<br>
+        <i>Đi vào cổng để chuyển phòng</i>
+    </div>
+
+    <div id="joystick-area">
+        <div id="btn-up" class="joy-btn">▲</div>
+        <div id="btn-left" class="joy-btn">◀</div>
+        <div id="btn-right" class="joy-btn">▶</div>
+        <div id="btn-down" class="joy-btn">▼</div>
+    </div>
+
+    <div id="zoom-modal">
+        <div id="zoom-container">
+            <img id="zoom-img" src="" class="zoom-content" style="display:none;">
+            <video id="zoom-video" src="" controls class="zoom-content" style="display:none;"></video>
+            <div id="zoom-caption"></div>
+            <button id="close-modal-btn">ĐÓNG LẠI</button>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- CƠ SỞ DỮ LIỆU ---
+        const database = {
+            1: [ 
+                { type: 'img', src: 'n1.jpg', desc: 'Sư đoàn 304 (Quân đoàn 2) nhận lẵng hoa của Chủ tịch nước Tôn Đức Thắng trước khi lên đường làm nhiệm vụ giúp nước bạn Campuchia năm 1978.' },
+                { type: 'img', src: 'n2.jpg', desc: 'Pháo binh ta nhả đạn đánh quân Pôn-pốt năm 1979.' },
+                { type: 'img', src: 'n3.jpg', desc: 'Nhân dân thị xã Long Xuyên tiễn người thân lên đường làm nhiệm vụ bảo vệ Tổ quốc năm 1978.' },
+                { type: 'img', src: 'n4.jpg', desc: 'Lính Pol Pot dồn dân vào các khu trường học, chùa chiền rồi giết tập thể. Trong ảnh là xác người dân bên hông chùa Phi Lai.' },
+                { type: 'img', src: 'n5.jpg', desc: 'Trên cánh đồng ở Ba Chúc, bên cạnh cây cầu sắc còn ngổn ngang xác người dân trong đêm thảm sát 14/04/1978.' },
+                { type: 'img', src: 'n6.webp', desc: 'Trưa 7-1-1979, các lực lượng vũ trang cách mạng Campuchia cùng Quân tình nguyện Việt Nam tiến vào giải phóng Thủ đô Phnom Penh.' },
+                { type: 'img', src: 'n7.jpg', desc: 'Bà mẹ Campuchia rót nước cho các chiến sĩ Quân tình nguyện Việt Nam.' },
+                { type: 'img', src: 'n8.jpg', desc: 'Người dân Campuchia lánh nạn sang Việt Nam di chuyển trên Quốc lộ 22 (thuộc địa phận tỉnh Tây Ninh), do không thể sống nổi dưới chế độ diệt chủng Pol Pot-Ieng Sary.' },
+                { type: 'img', src: 'n9.jpg', desc: 'Nhân dân Campuchia trong Lễ mừng chiến thắng 7/1/1979, được tổ chức ngày 25/1/1979 tại sân vận động Olympic ở thủ đô Phnom Penh.' },
+                { type: 'img', src: 'n10.webp', desc: 'Bộ đội Việt Nam giúp nhân dân Campuchia bảo vệ đền Angkor Wat.' },
+                { type: 'img', src: 'n11.webp', desc: 'Nhân dân tỉnh Ratanakiri (đông bắc Campuchia) đón chào bộ đội tình nguyện Việt Nam về giải phóng phum, sóc.' },
+                { type: 'img', src: 'n12.jpg', desc: 'Bản đồ cuộc tấn công của quân Khơ me đỏ.' },
+                { type: 'video', src: 'nvideo1.mp4', thumb: 'nvideo1_thumb.jpg', desc: 'Âm mưu và lược đồ quân Polpot tấn công Tây Nam.', color: 0xaa0000 },
+                { type: 'video', src: 'nvideo2.mp4', thumb: 'nvideo2_thumb.jpg', desc: 'Lược đồ và kế hoạch phản công của quân Việt Nam.', color: 0xaa0000 },
+            ],
+            2: [ 
+                { type: 'img', src: 'b1.png', desc: 'Báo quân đội nhân dân ra tuyên bố về hành động xâm lược của những người cầm quyền Trung Quốc.' },
+                { type: 'img', src: 'b2.jpg', desc: '4 giờ 17 phút ngày 17/2/1979, giữa lúc nhân dân Hoàng Liên Sơn đang ngủ ngon thì bất thình lình hàng loạt đạn đại bác từ phía Bắc giội tới làm khắp biên giới bốc lửa ngùn ngụt. Hàng loạt quả đại bác thi nhau trút xuống thị xã Lào Cai, Cốc Lếu, nhằm thẳng các cơ quan, nhà máy….' },
+                { type: 'img', src: 'b3.jpg', desc: 'Bức ảnh người chiến sĩ cầm súng B.41 đứng bên cột mốc biên giới số 0 ở Lạng Sơn đã trở thành biểu tượng của cuộc chiến bảo vệ biên giới phía Bắc 1979.' },
+                { type: 'img', src: 'b4.jpg', desc: 'Nhà dân ở phố Nhị Thanh, khu Kỳ Lừa bị quân Trung Quốc xâm lược phá hủy trên báo Nhân Dân tháng 2/1979.' },
+                { type: 'img', src: 'b5.jpg', desc: 'Hai đứa trẻ ở thị xã Cao Bằng ngược đường quốc lộ, băng rừng di tản về hướng Bắc Kạn, Thái Nguyên để tránh nạn.' },
+                { type: 'img', src: 'b6.jpg', desc: 'Cầu sông Bằng (Cao Bằng) bị quân Trung Quốc đánh sập vào ngày tháng 2/1979.' },
+                { type: 'img', src: 'b7.jpg', desc: 'Bộ đội ta hành quân Cao Bằng, vào ngày 25/2/1979 hình ảnh trên báo QĐND.' },
+                { type: 'img', src: 'b8.jpg', desc: 'Quân chủ lực của Việt Nam trên trận địa phải đối đầu với quân Trung Quốc đông gấp 12 lần, được yểm trợ bởi hỏa lực mạnh, vì vậy bên cạnh những chiến sĩ chính quy còn có cả lực lượng dân quân.' },
+                { type: 'img', src: 'b9.jpg', desc: 'Những chuyến hàng được vận chuyển lên biên giới phía Bắc.' },
+                { type: 'img', src: 'b10.jpg', desc: 'Ngày 5/3/1979 Chủ tịch nước Tôn Đức Thắng ký sắc lệnh 29 - LCT ra lệnh tổng động viên trên cả nước. Hàng vạn thanh niên các tỉnh biên giới và toàn quốc nhanh chóng ghi danh nhập ngũ - Trong ảnh là thanh niên đăng ký lên đường bảo vệ tổ quốc.' },
+                { type: 'img', src: 'b11.jpg', desc: 'Sẵn sàng hi sinh để bảo vệ từng tấc đất của tổ quốc -  ảnh tại mặt trận Vị Xuyên.' },
+                { type: 'img', src: 'b12.jpg', desc: 'Bản tin chiến thắng đăng trên báo Nhân Dân.' },
+				{ type: 'video', src: 'bvideo1.mp4', thumb: 'bvideo1_thumb.jpg', desc: 'Bản tin thời sự đặc biệt của VOV ngày 05/03/1979.', color: 0x00aa00 },
+                { type: 'video', src: 'bvideo2.mp4', thumb: 'bvideo2_thumb.jpg', desc: 'Tư liệu về các đợt tấn công của quân Trung Quoocs.', color: 0x00aa00 },
+            ],
+            3: [
+                { type: 'img', src: 'd1.jpg', desc: 'Đang cập nhật...' }, { type: 'img', src: 'd2.jpg', desc: 'Đang cập nhật...' },
+                { type: 'img', src: 'd3.jpg', desc: 'Đang cập nhật...' }, { type: 'img', src: 'd4.jpg', desc: 'Đang cập nhật...' },
+                { type: 'video', src: 'dvideo1.mp4', desc: 'Đang cập nhật...', color: 0x0000aa }, { type: 'img', src: 'd5.jpg', desc: 'Đang cập nhật...' },
+                { type: 'img', src: 'd6.jpg', desc: 'Đang cập nhật...' }, { type: 'img', src: 'd7.jpg', desc: 'Đang cập nhật...' },
+                { type: 'img', src: 'd8.jpg', desc: 'Đang cập nhật...' }, { type: 'img', src: 'd9.jpg', desc: 'Đang cập nhật...' },
+                { type: 'img', src: 'd10.jpg', desc: 'Đang cập nhật...' }, { type: 'img', src: 'd11.jpg', desc: 'Đang cập nhật...' },
+                { type: 'video', src: 'dvideo2.mp4', desc: 'Đang cập nhật...', color: 0x0000aa }, { type: 'img', src: 'd12.jpg', desc: 'Đang cập nhật...' }
+            ]
+        };
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 4000);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.1;
+        controls.rotateSpeed = 0.5; controls.enablePan = false; controls.enableZoom = false;
+        controls.minDistance = 0.1; controls.maxDistance = 0.2; 
+        controls.maxPolarAngle = Math.PI / 1.6; controls.minPolarAngle = Math.PI / 3.0;
+
+        let currentRoomGroup = new THREE.Group();
+        scene.add(currentRoomGroup);
+        
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+        let clickableObjects = []; 
+        let portals = [];
+
+        const moveState = { fwd: false, bwd: false, left: false, right: false };
+        let currentSceneId = 0; 
+        const moveSpeed = 8; 
+        const PLAYER_RADIUS = 60; 
+
+        document.addEventListener('keydown', (e) => {
+            switch(e.code) {
+                case 'KeyW': case 'ArrowUp': moveState.fwd = true; break;
+                case 'KeyS': case 'ArrowDown': moveState.bwd = true; break;
+                case 'KeyA': case 'ArrowLeft': moveState.left = true; break;
+                case 'KeyD': case 'ArrowRight': moveState.right = true; break;
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            switch(e.code) {
+                case 'KeyW': case 'ArrowUp': moveState.fwd = false; break;
+                case 'KeyS': case 'ArrowDown': moveState.bwd = false; break;
+                case 'KeyA': case 'ArrowLeft': moveState.left = false; break;
+                case 'KeyD': case 'ArrowRight': moveState.right = false; break;
+            }
+        });
+
+        const setupJoyBtn = (id, key) => {
+            const btn = document.getElementById(id);
+            btn.addEventListener('pointerdown', (e) => { e.preventDefault(); moveState[key] = true; btn.style.background = '#b30000'; });
+            btn.addEventListener('pointerup', (e) => { e.preventDefault(); moveState[key] = false; btn.style.background = 'rgba(255,255,255,0.3)'; });
+            btn.addEventListener('pointerleave', (e) => { e.preventDefault(); moveState[key] = false; btn.style.background = 'rgba(255,255,255,0.3)'; });
+        };
+        setupJoyBtn('btn-up', 'fwd'); setupJoyBtn('btn-down', 'bwd');
+        setupJoyBtn('btn-left', 'left'); setupJoyBtn('btn-right', 'right');
+
+        function updateMovement() {
+            if (portals.length > 0) {
+                portals.forEach(portal => {
+                    if (camera.position.distanceTo(portal.position) < 100) triggerTransition(portal.roomId);
+                });
+            }
+
+            if (!moveState.fwd && !moveState.bwd && !moveState.left && !moveState.right) return;
+
+            const direction = new THREE.Vector3();
+            camera.getWorldDirection(direction); direction.y = 0; direction.normalize();
+            const side = new THREE.Vector3(); side.crossVectors(camera.up, direction).normalize();
+            const velocity = new THREE.Vector3();
+
+            if (moveState.fwd) velocity.add(direction);
+            if (moveState.bwd) velocity.sub(direction);
+            if (moveState.left) velocity.add(side);
+            if (moveState.right) velocity.sub(side);
+            velocity.normalize().multiplyScalar(moveSpeed);
+
+            const currentX = camera.position.x;
+            const currentZ = camera.position.z;
+            
+            let nextX = currentX + velocity.x;
+            let nextZ = currentZ + velocity.z;
+
+            const roomSize = (currentSceneId === 0) ? 800 : 425; 
+            const boundary = roomSize - PLAYER_RADIUS;
+
+            if (nextX < -boundary) nextX = -boundary; else if (nextX > boundary) nextX = boundary;
+            if (nextZ < -boundary) nextZ = -boundary; else if (nextZ > boundary) nextZ = boundary;
+
+            const deltaX = nextX - currentX;
+            const deltaZ = nextZ - currentZ;
+
+            camera.position.x += deltaX;
+            camera.position.z += deltaZ;
+            
+            controls.target.x += deltaX;
+            controls.target.z += deltaZ;
+        }
+
+        let isTransitioning = false;
+        function triggerTransition(roomId) {
+            if(isTransitioning || roomId === currentSceneId) return;
+            isTransitioning = true;
+            moveState.fwd = false; moveState.bwd = false; moveState.left = false; moveState.right = false;
+            
+            const screen = document.getElementById('transition-screen');
+            screen.style.opacity = 1; screen.innerText = "ĐANG DI CHUYỂN...";
+            
+            setTimeout(() => {
+                if (roomId === 0) buildLobby();
+                else goToRoom(roomId);
+                
+                setTimeout(() => { screen.style.opacity = 0; isTransitioning = false; }, 600);
+            }, 600);
+        }
+
+        function createWallTexture(colorCode) {
+            const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d'); ctx.fillStyle = colorCode; ctx.fillRect(0,0,512,512);
+            for(let i=0; i<3000; i++) { ctx.fillStyle = 'rgba(0,0,0,0.04)'; ctx.fillRect(Math.random()*512, Math.random()*512, 2, 2); }
+            const tex = new THREE.CanvasTexture(canvas); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(4, 2);
+            return tex;
+        }
+        function createFloorTexture(isLobby) {
+            const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d'); 
+            ctx.fillStyle = isLobby ? '#222' : '#d2b48c'; ctx.fillRect(0,0,512,512);
+            ctx.strokeStyle = isLobby ? '#444' : '#8b4513'; ctx.lineWidth = 2;
+            if (isLobby) { 
+                for(let i=0; i<=512; i+=128) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke(); ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke(); }
+            } else { 
+                for(let i=0; i<512; i+=64) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke(); const offset = (i/64)%2 === 0 ? 0 : 32; for(let j=offset; j<512; j+=128) { ctx.beginPath(); ctx.moveTo(j, i); ctx.lineTo(j, i+64); ctx.stroke(); } }
+            }
+            const tex = new THREE.CanvasTexture(canvas); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(8, 8); return tex;
+        }
+        function createPortalLabelMesh(text, color, baseWidth) {
+            const canvas = document.createElement('canvas');
+            const w = 1024; 
+            canvas.width = w; 
+            canvas.height = 1024; 
+            const ctx = canvas.getContext('2d');
+            
+            const fontSize = 80;
+            ctx.font = "bold " + fontSize + "px 'Segoe UI', Arial";
+            
+            const words = text.split(' ');
+            let lines = [];
+            let currentLine = words[0];
+            const maxLineWidth = w - 100; 
+
+            for (let i = 1; i < words.length; i++) {
+                const word = words[i];
+                const width = ctx.measureText(currentLine + " " + word).width;
+                if (width < maxLineWidth) {
+                    currentLine += " " + word;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            lines.push(currentLine);
+
+            const lineHeight = fontSize * 1.3;
+            const realHeight = (lines.length * lineHeight) + 120; 
+            canvas.height = realHeight; 
+            ctx.fillStyle = color; 
+            ctx.fillRect(0, 0, w, realHeight);
+            
+            ctx.strokeStyle = "white"; 
+            ctx.lineWidth = 15; 
+            ctx.strokeRect(10, 10, w - 20, realHeight - 20);
+
+            ctx.font = "bold " + fontSize + "px 'Segoe UI', Arial"; // Set lại font sau khi resize
+            ctx.fillStyle = "white";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            const startY = (realHeight - (lines.length * lineHeight)) / 2 + (lineHeight/2) + 10;
+            for (let k = 0; k < lines.length; k++) {
+                ctx.fillText(lines[k], w / 2, startY + (k * lineHeight) - (lineHeight/2));
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.minFilter = THREE.LinearFilter;
+            
+            const meshHeight = baseWidth * (realHeight / w);
+            
+            const material = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(baseWidth, meshHeight), material);
+            
+            mesh.userData = { h: meshHeight };
+            return mesh;
+        }
+        function createGuideBoardTexture() {
+            const canvas = document.createElement('canvas'); canvas.width = 1024; canvas.height = 576;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = "#f5f5f5"; ctx.fillRect(0,0,1024,576);
+            ctx.strokeStyle = "#b30000"; ctx.lineWidth = 20; ctx.strokeRect(0,0,1024,576);
+            ctx.fillStyle = "#b30000"; ctx.font = "bold 70px Arial"; ctx.textAlign = "center"; ctx.fillText("HƯỚNG DẪN THAM QUAN", 512, 120);
+            ctx.fillStyle = "#333"; ctx.font = "40px Arial"; ctx.textAlign = "left";
+            const lines = ["1. Đi bộ vào các cổng để tham quan từng phòng.", "2. Sử dụng phím W, A, S, D để di chuyển.", "3. Kéo chuột để xoay góc nhìn.", "4. Bấm vào tranh để xem thông tin chi tiết."];
+            let y = 220; lines.forEach(line => { ctx.fillText(line, 100, y); y += 60; });
+            const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace; return tex;
+        }
+        function createCaptionMesh(text, width) {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            const w = 1024; 
+            const fontSize = 42;
+            const font = "600 " + fontSize + "px 'Segoe UI', Arial";
+            tempCtx.font = font;
+
+            const words = text.split(' ');
+            let lines = [];
+            let currentLine = words[0];
+            const maxWidth = w - 80;
+
+            for (let i = 1; i < words.length; i++) {
+                const word = words[i];
+                const width = tempCtx.measureText(currentLine + " " + word).width;
+                if (width < maxWidth) {
+                    currentLine += " " + word;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            lines.push(currentLine);
+
+            const lineHeight = fontSize * 1.4;
+            const h = (lines.length * lineHeight) + 100; 
+
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+            ctx.fillRect(0, 0, w, h);
+            ctx.strokeStyle = "#888"; 
+            ctx.lineWidth = 12; 
+            ctx.strokeRect(6, 6, w - 12, h - 12);
+
+            ctx.font = font;
+            ctx.fillStyle = "#222";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            const startY = (h - (lines.length * lineHeight)) / 2 + (lineHeight / 2);
+            for (let i = 0; i < lines.length; i++) {
+                ctx.fillText(lines[i], w / 2, startY + (i * lineHeight));
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.minFilter = THREE.LinearFilter;
+            
+            const meshHeight = width * (h / w); 
+
+            const mesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(width, meshHeight), 
+                new THREE.MeshBasicMaterial({ map: tex, transparent: true })
+            );
+            
+            mesh.userData = { height: meshHeight }; 
+            
+            return mesh;
+        }
+        function buildRoomMesh(width, depth, height, isLobby) {
+            const color = isLobby ? '#dddddd' : '#fffff0';
+            const wallMat = new THREE.MeshBasicMaterial({ map: createWallTexture(color), side: THREE.DoubleSide });
+            const floorMat = new THREE.MeshBasicMaterial({ map: createFloorTexture(isLobby) });
+            const ceilMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
+
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), floorMat);
+            floor.rotation.x = -Math.PI / 2; currentRoomGroup.add(floor);
+            const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), ceilMat);
+            ceiling.rotation.x = Math.PI / 2; ceiling.position.y = height; currentRoomGroup.add(ceiling);
+            const front = new THREE.Mesh(new THREE.PlaneGeometry(width, height), wallMat);
+            front.position.z = -depth/2; front.position.y = height/2; currentRoomGroup.add(front);
+            const back = new THREE.Mesh(new THREE.PlaneGeometry(width, height), wallMat);
+            back.position.z = depth/2; back.position.y = height/2; back.rotation.y = Math.PI; currentRoomGroup.add(back);
+            const left = new THREE.Mesh(new THREE.PlaneGeometry(depth, height), wallMat);
+            left.position.x = -width/2; left.position.y = height/2; left.rotation.y = Math.PI/2; currentRoomGroup.add(left);
+            const right = new THREE.Mesh(new THREE.PlaneGeometry(depth, height), wallMat);
+            right.position.x = width/2; right.position.y = height/2; right.rotation.y = -Math.PI/2; currentRoomGroup.add(right);
+        }
+
+        function createPortal(x, z, rotY, label, color, targetRoomId) {
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(160, 240, 20), new THREE.MeshBasicMaterial({ color: 0x222222 }));
+            frame.position.set(x, 120, z); frame.rotation.y = rotY; currentRoomGroup.add(frame);
+
+            const glowCanvas = document.createElement('canvas'); glowCanvas.width = 64; glowCanvas.height = 64;
+            const ctx = glowCanvas.getContext('2d');
+            const grd = ctx.createLinearGradient(0,0,0,64); grd.addColorStop(0, color); grd.addColorStop(1, "black");
+            ctx.fillStyle = grd; ctx.fillRect(0,0,64,64);
+            const portalMesh = new THREE.Mesh(new THREE.PlaneGeometry(140, 220), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(glowCanvas) }));
+            portalMesh.position.set(0, 0, 11); frame.add(portalMesh);
+            const labelMesh = createPortalLabelMesh(label, color, 200);
+            const labelY = 120 + (labelMesh.userData.h / 2) + 5;
+            
+            labelMesh.position.set(0, labelY, 0); 
+            frame.add(labelMesh);
+
+            const collisionPos = frame.position.clone();
+            if(Math.abs(z) > Math.abs(x)) collisionPos.z += (z < 0 ? 50 : -50); else collisionPos.x += (x < 0 ? 50 : -50);
+            portals.push({ position: collisionPos, roomId: targetRoomId });
+        }
+			window.buildLobby = function() {
+            clearScene();
+            currentSceneId = 0;
+            scene.background = new THREE.Color(0x999999);
+            buildRoomMesh(1600, 1600, 500, true);
+
+            const guideMat = new THREE.MeshBasicMaterial({ map: createGuideBoardTexture(), side: THREE.DoubleSide });
+            const guideMesh = new THREE.Mesh(new THREE.PlaneGeometry(800, 450), guideMat);
+            guideMesh.position.set(0, 250, 790); guideMesh.rotation.y = Math.PI; currentRoomGroup.add(guideMesh);
+
+            createPortal(-750, 0, Math.PI/2, "1. Đấu tranh bảo vệ biên giới phía Tây Nam", "#b30000", 1);
+            
+            createPortal(0, -750, 0, "2. Đấu tranh bảo vệ biên giới Phía Bắc", "#006600", 2);
+            
+            createPortal(750, 0, -Math.PI/2, "3. Đấu tranh bảo vệ Biển Đông", "#0000b3", 3);
+
+            camera.position.set(0, 160, -400); 
+            controls.target.set(0, 160, 300); 
+            controls.update();
+        }
+
+        window.goToRoom = function(id) {
+            clearScene();
+            currentSceneId = id;
+            scene.background = new THREE.Color(0xffffff);
+            
+            const roomSize = 850;
+            const wallOffset = roomSize / 2;
+            buildRoomMesh(roomSize, roomSize, 350, false);
+
+            createPortal(300, -wallOffset + 10, 0, "⬅ QUAY VỀ SẢNH", "#555", 0);
+
+            const data = database[id];
+            
+            data.forEach((item, i) => {
+                let pos = { x:0, y:150, z:0 }; 
+                let rotY = 0;
+                const spacing = 190; 
+                const spacing3 = 270;
+                if (i < 4) { 
+                    pos.x = -wallOffset; 
+                    pos.z = -285 + (i * spacing); 
+                    rotY = Math.PI / 2; 
+                } 
+                
+                else if (i < 7) { 
+                    let idx = i - 4; 
+                    pos.z = -wallOffset; 
+                    rotY = 0; 
+                    
+                    pos.x = -250 + (idx * 160); 
+                } 
+                
+                else if (i < 11) { 
+                    let idx = i - 7; 
+                    pos.x = wallOffset; 
+                    pos.z = 285 - (idx * spacing); 
+                    rotY = -Math.PI / 2; 
+                } 
+                
+
+                else { 
+                    let idx = i - 11; 
+                    pos.z = wallOffset; 
+                    pos.x = spacing3 - (idx * spacing3); 
+                    rotY = Math.PI; 
+                }
+
+                const frameW = 140; const frameH = 100;
+                const frame = new THREE.Mesh(new THREE.BoxGeometry(frameW+6, frameH+6, 2), new THREE.MeshBasicMaterial({ color: 0x5c4033 }));
+                frame.position.set(pos.x, pos.y, pos.z); frame.rotation.y = rotY; frame.translateZ(4); currentRoomGroup.add(frame);
+
+                let material;
+                if (item.type === 'video') {
+                    if (item.thumb) {
+                        const thumbTex = new THREE.TextureLoader().load(item.thumb);
+                        thumbTex.colorSpace = THREE.SRGBColorSpace;
+                        material = new THREE.MeshBasicMaterial({ map: thumbTex });
+                    } else {
+                        material = new THREE.MeshBasicMaterial({ color: 0x333333 });
+                    }
+                } 
+                else { 
+                    const tex = new THREE.TextureLoader().load(item.src); 
+                    tex.colorSpace = THREE.SRGBColorSpace; 
+                    material = new THREE.MeshBasicMaterial({ map: tex }); 
+                }
+                
+                const mesh = new THREE.Mesh(new THREE.PlaneGeometry(frameW, frameH), material);
+                mesh.position.copy(frame.position); mesh.rotation.copy(frame.rotation); mesh.translateZ(1.5); 
+                mesh.userData = item; clickableObjects.push(mesh); currentRoomGroup.add(mesh);
+
+                if(item.desc) {
+                    const cap = createCaptionMesh(item.desc, frameW);
+                    cap.position.copy(mesh.position); 
+                    cap.rotation.copy(mesh.rotation); 
+                    
+                    const capHeight = cap.userData.height || 40; 
+                    cap.position.y -= (frameH/2 + capHeight/2 + 10); 
+                    
+                    cap.translateZ(0.2); 
+                    currentRoomGroup.add(cap);
+                }
+            });
+            
+            camera.position.set(-100, 150, 200); 
+            controls.target.set(-100, 150, 199);
+            controls.update();
+        }
+
+        function clearScene() {
+            clickableObjects = []; portals = [];
+            while(currentRoomGroup.children.length > 0){ const obj = currentRoomGroup.children[0]; currentRoomGroup.remove(obj); if(obj.geometry) obj.geometry.dispose(); if(obj.material) obj.material.dispose(); }
+        }
+
+        window.openZoom = function(data) {
+            const modal = document.getElementById('zoom-modal');
+            const imgTag = document.getElementById('zoom-img'); const vidTag = document.getElementById('zoom-video'); const captionTag = document.getElementById('zoom-caption');
+            modal.style.display = 'flex'; captionTag.innerText = data.desc;
+            if(data.type === 'video') { imgTag.style.display = 'none'; vidTag.style.display = 'block'; vidTag.src = data.src; vidTag.play(); } 
+            else { vidTag.style.display = 'none'; vidTag.pause(); imgTag.style.display = 'block'; imgTag.src = data.src; }
+        }
+        document.getElementById('close-modal-btn').addEventListener('click', (e) => { document.getElementById('zoom-modal').style.display = 'none'; document.getElementById('zoom-video').pause(); e.stopPropagation(); });
+        document.getElementById('zoom-container').addEventListener('click', (e) => { e.stopPropagation(); });
+
+        let isDragging = false; let pointerDownTime = 0;
+        renderer.domElement.addEventListener('pointerdown', () => { isDragging = false; pointerDownTime = Date.now(); });
+        renderer.domElement.addEventListener('pointermove', () => { isDragging = true; });
+        renderer.domElement.addEventListener('pointerup', (event) => {
+            if (isDragging && (Date.now() - pointerDownTime > 250)) return; 
+            pointer.x = (event.clientX / window.innerWidth) * 2 - 1; pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(pointer, camera);
+            const intersects = raycaster.intersectObjects(clickableObjects, false);
+            if (intersects.length > 0) openZoom(intersects[0].object.userData);
+        });
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+
+        setTimeout(() => { document.getElementById('transition-screen').style.opacity = 0; }, 1000);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateMovement();
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        buildLobby(); animate();
+    </script>
+</body>
+</html>
