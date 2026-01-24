@@ -3,36 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bảo Tàng Lịch Sử</title>
+    <title>Bảo Tàng Lịch Sử 3D - Final Light</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; touch-action: none; user-select: none; }
         
-        #ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 10;
-        }
-
-        #back-btn { display: none; }
-        
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         #instruction-overlay {
             position: absolute; top: 20px; right: 20px; text-align: right;
             color: #fff; font-size: 13px; pointer-events: none; z-index: 5; font-weight: 700;
-            text-shadow: 1px 1px 2px black; background: rgba(0,0,0,0.6);
-            padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.5);
+            padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
         }
 
-        #joystick-area {
-            position: absolute; bottom: 40px; left: 40px; width: 160px; height: 160px;
-            z-index: 20; pointer-events: auto;
-        }
+        #joystick-area { position: absolute; bottom: 40px; left: 40px; width: 160px; height: 160px; z-index: 20; pointer-events: auto; }
         .joy-btn {
             position: absolute; width: 50px; height: 50px;
-            background: rgba(255, 255, 255, 0.3); border: 2px solid rgba(255,255,255,0.6);
+            background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.4);
             border-radius: 50%; cursor: pointer; display: flex;
             justify-content: center; align-items: center; font-size: 24px; font-weight: bold; color: #fff;
-            -webkit-tap-highlight-color: transparent; transition: background 0.1s;
+            backdrop-filter: blur(4px); box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: all 0.1s;
         }
-        .joy-btn:active { background: #b30000; border-color: #fff; }
+        .joy-btn:active { background: #ffcc00; color: #000; border-color: #ffcc00; transform: scale(0.95); }
         #btn-up { top: 0; left: 55px; }
         #btn-down { bottom: 0; left: 55px; }
         #btn-left { top: 55px; left: 0; }
@@ -40,52 +33,50 @@
 
         #zoom-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 100;
+            background: rgba(0,0,0,0.9); z-index: 100;
             display: none; flex-direction: column; justify-content: center; align-items: center;
-            pointer-events: auto;
+            pointer-events: auto; backdrop-filter: blur(10px);
         }
-        #zoom-container {
-            display: flex; flex-direction: column; align-items: center;
-            max-width: 90%; max-height: 90%; pointer-events: auto; position: relative;
-        }
-        .zoom-content { max-width: 100%; max-height: 55vh; border: 4px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+        #zoom-container { display: flex; flex-direction: column; align-items: center; max-width: 90%; max-height: 90%; pointer-events: auto; position: relative; }
+        .zoom-content { max-width: 100%; max-height: 60vh; border: 2px solid #fff; box-shadow: 0 0 50px rgba(0,0,0,0.8); border-radius: 4px; }
         #zoom-caption {
-            color: #333; margin-top: 15px; text-align: center; width: 100%;
-            font-size: 16px; line-height: 1.5; background: #fff; padding: 15px; border-radius: 6px;
-            max-height: 25vh; overflow-y: auto;
+            color: #ddd; margin-top: 20px; text-align: center; width: 100%;
+            font-size: 16px; line-height: 1.6; background: rgba(30,30,30,0.9); padding: 20px; border-radius: 8px;
+            max-height: 20vh; overflow-y: auto; border: 1px solid #444;
         }
         #close-modal-btn {
-            margin-top: 15px; padding: 12px 40px; background: #b30000; color: white;
+            margin-top: 20px; padding: 10px 30px; background: #b30000; color: white;
             border: none; font-weight: 700; cursor: pointer; font-size: 14px; text-transform: uppercase;
-            border-radius: 4px; 
+            border-radius: 30px; box-shadow: 0 4px 15px rgba(179, 0, 0, 0.4); transition: transform 0.2s;
         }
+        #close-modal-btn:hover { transform: scale(1.05); background: #d40000; }
 
         #transition-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: black; z-index: 200; display: flex; 
-            justify-content: center; align-items: center; color: white;
+            background: #111; z-index: 200; display: flex; 
+            justify-content: center; align-items: center; color: #ffcc00;
             font-size: 20px; font-weight: bold; opacity: 1; pointer-events: none;
-            transition: opacity 0.8s;
+            transition: opacity 0.8s; letter-spacing: 2px;
         }
         
         #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
-            background: rgba(255, 255, 255, 0.8); border-radius: 50%;
+            position: absolute; top: 50%; left: 50%; width: 8px; height: 8px;
+            background: rgba(255, 255, 255, 0.5); border-radius: 50%;
             transform: translate(-50%, -50%); pointer-events: none; z-index: 15;
-            box-shadow: 0 0 4px black;
+            box-shadow: 0 0 4px black; border: 1px solid black;
         }
     </style>
 </head>
 <body>
 
-    <div id="transition-screen">ĐANG KHỞI TẠO...</div>
+    <div id="transition-screen">ĐANG KHỞI TẠO BẢO TÀNG...</div>
     <div id="crosshair"></div>
 
     <div id="instruction-overlay">
-        <b>HƯỚNG DẪN DI CHUYỂN</b><br>
-        Máy tính: Sử dụng phím W A S D<br>
-        Điện Thoại: Sử dụng nút ảo<br>
-        <i>Đi vào cổng để chuyển phòng</i>
+        <b>HƯỚNG DẪN</b><br>
+        Máy tính: W A S D<br>
+        Điện Thoại: Nút ảo<br>
+        <i>Chạm vào tranh để xem</i>
     </div>
 
     <div id="joystick-area">
@@ -100,7 +91,7 @@
             <img id="zoom-img" src="" class="zoom-content" style="display:none;">
             <video id="zoom-video" src="" controls class="zoom-content" style="display:none;"></video>
             <div id="zoom-caption"></div>
-            <button id="close-modal-btn">ĐÓNG LẠI</button>
+            <button id="close-modal-btn">Đóng lại</button>
         </div>
     </div>
 
@@ -133,11 +124,11 @@
                 { type: 'img', src: 'n11.webp', desc: 'Nhân dân tỉnh Ratanakiri (đông bắc Campuchia) đón chào bộ đội tình nguyện Việt Nam về giải phóng phum, sóc.' },
                 { type: 'img', src: 'n12.jpg', desc: 'Bản đồ cuộc tấn công của quân Khơ me đỏ.' },
                 { type: 'video', src: 'nvideo1.mp4', thumb: 'nvideo1_thumb.jpg', desc: 'Âm mưu và lược đồ quân Polpot tấn công Tây Nam.', color: 0xaa0000 },
-                { type: 'video', src: 'nvideo2.mp4', thumb: 'nvideo2_thumb.jpg', desc: 'Lược đồ và kế hoạch phản công của quân Việt Nam.', color: 0xaa0000 },
+                { type: 'video', src: 'nvideo2.mp4', thumb: 'nvideo2_thumb.jpg', desc: 'Lược đồ và kết hoạch phản công của quân Việt Nam.', color: 0xaa0000 },
             ],
             2: [ 
                 { type: 'img', src: 'b1.png', desc: 'Báo quân đội nhân dân ra tuyên bố về hành động xâm lược của những người cầm quyền Trung Quốc.' },
-                { type: 'img', src: 'b2.jpg', desc: '4 giờ 17 phút ngày 17/2/1979, giữa lúc nhân dân Hoàng Liên Sơn đang ngủ ngon thì bất thình lình hàng loạt đạn đại bác từ phía Bắc giội tới làm khắp biên giới bốc lửa ngùn ngụt. Hàng loạt quả đại bác thi nhau trút xuống thị xã Lào Cai, Cốc Lếu, nhằm thẳng các cơ quan, nhà máy….' },
+                { type: 'img', src: 'b2.jpg', desc: '4 giờ 17 phút ngày 17/2/1979, giữa lúc nhân dân Hoàng Liên Sơn đang ngủ ngon thì bất thình lình hàng loạt đạn đại bác từ phía Bắc giội tới làm khắp biên giới bốc lửa ngùn ngụt. Hàng loạt quả đại bác thi nhau trút xuống thị xã Lào Cai, Cốc Lếu, nhằm thẳng các cơ quan, nhà máy…' },
                 { type: 'img', src: 'b3.jpg', desc: 'Bức ảnh người chiến sĩ cầm súng B.41 đứng bên cột mốc biên giới số 0 ở Lạng Sơn đã trở thành biểu tượng của cuộc chiến bảo vệ biên giới phía Bắc 1979.' },
                 { type: 'img', src: 'b4.jpg', desc: 'Nhà dân ở phố Nhị Thanh, khu Kỳ Lừa bị quân Trung Quốc xâm lược phá hủy trên báo Nhân Dân tháng 2/1979.' },
                 { type: 'img', src: 'b5.jpg', desc: 'Hai đứa trẻ ở thị xã Cao Bằng ngược đường quốc lộ, băng rừng di tản về hướng Bắc Kạn, Thái Nguyên để tránh nạn.' },
@@ -148,8 +139,8 @@
                 { type: 'img', src: 'b10.jpg', desc: 'Ngày 5/3/1979 Chủ tịch nước Tôn Đức Thắng ký sắc lệnh 29 - LCT ra lệnh tổng động viên trên cả nước. Hàng vạn thanh niên các tỉnh biên giới và toàn quốc nhanh chóng ghi danh nhập ngũ - Trong ảnh là thanh niên đăng ký lên đường bảo vệ tổ quốc.' },
                 { type: 'img', src: 'b11.jpg', desc: 'Sẵn sàng hi sinh để bảo vệ từng tấc đất của tổ quốc -  ảnh tại mặt trận Vị Xuyên.' },
                 { type: 'img', src: 'b12.jpg', desc: 'Bản tin chiến thắng đăng trên báo Nhân Dân.' },
-				{ type: 'video', src: 'bvideo1.mp4', thumb: 'bvideo1_thumb.jpg', desc: 'Bản tin thời sự đặc biệt của VOV ngày 05/03/1979.', color: 0x00aa00 },
-                { type: 'video', src: 'bvideo2.mp4', thumb: '1bvideo2_thumb.jpg', desc: 'Tư liệu về các đợt tấn công của quân Trung Quốc.', color: 0x00aa00 },
+                { type: 'video', src: 'bvideo1.mp4', thumb: 'bvideo1_thumb.jpg', desc: 'Bản tin thời sự của đài tiếng nói Việt Nam ngày 05/03/1979.', color: 0x00aa00 },
+                { type: 'video', src: 'bvideo2.mp4', thumb: '1bvideo2_thumb.jpg', desc: 'Tư liệu về quân Trung Quốc tấn công.', color: 0x00aa00 },
             ],
             3: [
                 { type: 'img', src: 'd1.jpg', desc: 'Đang cập nhật...' }, { type: 'img', src: 'd2.jpg', desc: 'Đang cập nhật...' },
@@ -163,18 +154,26 @@
         };
 
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 4000);
+        // ĐÃ XÓA SƯƠNG MÙ (FOG) ĐỂ KHÔNG BỊ MỜ ẢNH
+
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 2000);
         
+        // --- CẤU HÌNH RENDERER (CỰC SÁNG) ---
         const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
+        
+        renderer.toneMapping = THREE.ReinhardToneMapping; 
+        renderer.toneMappingExposure = 5.0; // Tăng sáng gấp 3 lần
         document.body.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true; controls.dampingFactor = 0.1;
-        controls.rotateSpeed = 0.5; controls.enablePan = false; controls.enableZoom = false;
+        controls.enableDamping = true; controls.dampingFactor = 0.08;
+        controls.rotateSpeed = 0.4; controls.enablePan = false; controls.enableZoom = false;
         controls.minDistance = 0.1; controls.maxDistance = 0.2; 
-        controls.maxPolarAngle = Math.PI / 1.6; controls.minPolarAngle = Math.PI / 3.0;
+        controls.maxPolarAngle = Math.PI / 1.5; controls.minPolarAngle = Math.PI / 2.8;
 
         let currentRoomGroup = new THREE.Group();
         scene.add(currentRoomGroup);
@@ -189,6 +188,7 @@
         const moveSpeed = 8; 
         const PLAYER_RADIUS = 60; 
 
+        // --- XỬ LÝ SỰ KIỆN PHÍM ---
         document.addEventListener('keydown', (e) => {
             switch(e.code) {
                 case 'KeyW': case 'ArrowUp': moveState.fwd = true; break;
@@ -208,9 +208,11 @@
 
         const setupJoyBtn = (id, key) => {
             const btn = document.getElementById(id);
-            btn.addEventListener('pointerdown', (e) => { e.preventDefault(); moveState[key] = true; btn.style.background = '#b30000'; });
-            btn.addEventListener('pointerup', (e) => { e.preventDefault(); moveState[key] = false; btn.style.background = 'rgba(255,255,255,0.3)'; });
-            btn.addEventListener('pointerleave', (e) => { e.preventDefault(); moveState[key] = false; btn.style.background = 'rgba(255,255,255,0.3)'; });
+            const activeColor = '#ffcc00';
+            const inactiveColor = 'rgba(255,255,255,0.15)';
+            btn.addEventListener('pointerdown', (e) => { e.preventDefault(); moveState[key] = true; btn.style.background = activeColor; btn.style.color = 'black'; });
+            btn.addEventListener('pointerup', (e) => { e.preventDefault(); moveState[key] = false; btn.style.background = inactiveColor; btn.style.color = 'white';});
+            btn.addEventListener('pointerleave', (e) => { e.preventDefault(); moveState[key] = false; btn.style.background = inactiveColor; btn.style.color = 'white';});
         };
         setupJoyBtn('btn-up', 'fwd'); setupJoyBtn('btn-down', 'bwd');
         setupJoyBtn('btn-left', 'left'); setupJoyBtn('btn-right', 'right');
@@ -274,121 +276,90 @@
             }, 600);
         }
 
-        // --- HÀM TẠO TƯỜNG GỖ (WOOD TEXTURE) ---
-        function createWallTexture(colorCode) {
+        // --- TƯỜNG SÁNG HƠN ---
+        function createWallTexture() {
             const canvas = document.createElement('canvas'); 
-            canvas.width = 1024; canvas.height = 1024; // Tăng độ phân giải cho nét
+            canvas.width = 1024; canvas.height = 1024;
             const ctx = canvas.getContext('2d');
             
-            // 1. Màu nền gỗ cơ bản (Màu nâu vàng ấm áp)
-            ctx.fillStyle = "#e3cca8"; 
+            // Màu vàng kem sáng
+            ctx.fillStyle = "#E8D8B0"; 
             ctx.fillRect(0, 0, 1024, 1024);
 
-            // 2. Vẽ từng thanh gỗ ngang
-            const plankHeight = 128; // Chiều cao mỗi thanh gỗ
-            
-            for (let y = 0; y < 1024; y += plankHeight) {
-                // Tạo độ lệch màu nhẹ giữa các thanh gỗ để nhìn tự nhiên
-                const tint = Math.random() * 20 - 10;
-                const r = 210 + tint;
-                const g = 180 + tint;
-                const b = 140 + tint;
-                
-                ctx.fillStyle = `rgb(${r},${g},${b})`;
-                ctx.fillRect(0, y, 1024, plankHeight - 4); // -4 để tạo khe hở
-
-                // 3. Vẽ vân gỗ (Noise & Streaks)
-                for (let i = 0; i < 400; i++) {
-                    // Vẽ các vệt vân gỗ ngang sẫm màu
-                    ctx.fillStyle = `rgba(101, 67, 33, ${0.05 + Math.random() * 0.1})`;
-                    const x = Math.random() * 1024;
-                    const w = 50 + Math.random() * 200; // Độ dài vân
-                    const h = 2 + Math.random() * 3;    // Độ dày vân
-                    ctx.fillRect(x, y + Math.random() * plankHeight, w, h);
-                }
-
-                // 4. Vẽ khe hở giữa các thanh gỗ (Màu nâu đậm)
-                ctx.fillStyle = "#5d4037";
-                ctx.fillRect(0, y + plankHeight - 4, 1024, 4);
-                
-                // Vẽ đinh tán ở 2 đầu thanh gỗ (trang trí)
-                ctx.fillStyle = "rgba(0,0,0,0.2)";
-                ctx.beginPath(); ctx.arc(50, y + plankHeight/2, 3, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(974, y + plankHeight/2, 3, 0, Math.PI*2); ctx.fill();
+            // Noise nhẹ
+            for (let i = 0; i < 60000; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.2)";
+                ctx.fillRect(Math.random()*1024, Math.random()*1024, 2, 2);
             }
+            
+            // Chân tường và trần
+            ctx.fillStyle = "#5d4037"; ctx.fillRect(0, 1024 - 30, 1024, 30);
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 1024, 20);
 
             const tex = new THREE.CanvasTexture(canvas);
-            tex.wrapS = THREE.RepeatWrapping; 
-            tex.wrapT = THREE.RepeatWrapping;
-            // Lặp lại texture để vân gỗ nhỏ lại cho vừa mắt
-            tex.repeat.set(3, 2); 
-            
-            // Chỉnh màu sắc texture cho khớp với ánh sáng mong muốn
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(2, 2); 
             tex.colorSpace = THREE.SRGBColorSpace;
-            
             return tex;
         }
-        function createFloorTexture(isLobby) {
-            const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
-            const ctx = canvas.getContext('2d'); 
-            ctx.fillStyle = isLobby ? '#222' : '#d2b48c'; ctx.fillRect(0,0,512,512);
-            ctx.strokeStyle = isLobby ? '#444' : '#8b4513'; ctx.lineWidth = 2;
-            if (isLobby) { 
-                for(let i=0; i<=512; i+=128) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke(); ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke(); }
-            } else { 
-                for(let i=0; i<512; i+=64) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke(); const offset = (i/64)%2 === 0 ? 0 : 32; for(let j=offset; j<512; j+=128) { ctx.beginPath(); ctx.moveTo(j, i); ctx.lineTo(j, i+64); ctx.stroke(); } }
-            }
-            const tex = new THREE.CanvasTexture(canvas); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(8, 8); return tex;
-        }
-        function createPortalLabelMesh(text, color, baseWidth) {
-            // 1. Cấu hình Canvas
-            const canvas = document.createElement('canvas');
-            const w = 1024; 
-            canvas.width = w; 
-            canvas.height = 1024; // Chiều cao tạm
+
+        // --- SÀN VẢI SÁNG HƠN ---
+        function createFloorTexture() {
+            const canvas = document.createElement('canvas'); 
+            canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext('2d');
             
-            // 2. Cấu hình Font
+            // Xanh lá tươi hơn để bắt sáng
+            ctx.fillStyle = "#2E5B38"; 
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Noise vải
+            for (let i = 0; i < 40000; i++) {
+                ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.15})`;
+                ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(8, 8); 
+            tex.colorSpace = THREE.SRGBColorSpace;
+            return tex;
+        }
+
+        // --- LABEL MESH ---
+        function createPortalLabelMesh(text, color, baseWidth) {
+            const canvas = document.createElement('canvas');
+            const w = 1024; canvas.width = w; 
+            const ctx = canvas.getContext('2d');
             const fontSize = 80;
             ctx.font = "bold " + fontSize + "px 'Segoe UI', Arial";
             
-            // 3. Xử lý chia dòng (Word Wrap)
             const words = text.split(' ');
-            let lines = [];
-            let currentLine = words[0];
+            let lines = []; let currentLine = words[0];
             const maxLineWidth = w - 100; 
 
             for (let i = 1; i < words.length; i++) {
                 const word = words[i];
                 const width = ctx.measureText(currentLine + " " + word).width;
-                if (width < maxLineWidth) {
-                    currentLine += " " + word;
-                } else {
-                    lines.push(currentLine);
-                    currentLine = word;
-                }
+                if (width < maxLineWidth) currentLine += " " + word;
+                else { lines.push(currentLine); currentLine = word; }
             }
             lines.push(currentLine);
+            
             const lineHeight = fontSize * 1.3;
             const realHeight = (lines.length * lineHeight) + 120; 
-            
             canvas.height = realHeight; 
             
-            ctx.fillStyle = color; 
-            ctx.fillRect(0, 0, w, realHeight);
+            ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; 
+            ctx.beginPath();
+            ctx.roundRect(10, 10, w - 20, realHeight - 20, 40);
+            ctx.fill();
             
-            ctx.strokeStyle = "white"; 
-            ctx.lineWidth = 15; 
-            ctx.strokeRect(10, 10, w - 20, realHeight - 20);
+            ctx.strokeStyle = color; ctx.lineWidth = 15; ctx.stroke();
 
             ctx.font = "bold " + fontSize + "px 'Segoe UI', Arial"; 
-            ctx.fillStyle = "white";
-            ctx.textAlign = "center";
-            
-            ctx.textBaseline = "middle";
-
+            ctx.fillStyle = "#ffffff";
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
             const totalTextBlockHeight = lines.length * lineHeight;
-            
             let currentY = (realHeight / 2) - (totalTextBlockHeight / 2) + (lineHeight / 2);
 
             for (let k = 0; k < lines.length; k++) {
@@ -398,68 +369,72 @@
 
             const tex = new THREE.CanvasTexture(canvas);
             tex.minFilter = THREE.LinearFilter;
-            
             const meshHeight = baseWidth * (realHeight / w);
-            const material = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+            const material = new THREE.MeshBasicMaterial({ map: tex, transparent: true }); 
             const mesh = new THREE.Mesh(new THREE.PlaneGeometry(baseWidth, meshHeight), material);
-            
             mesh.userData = { h: meshHeight };
             return mesh;
         }
+
         function createGuideBoardTexture() {
             const canvas = document.createElement('canvas'); canvas.width = 1024; canvas.height = 576;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = "#f5f5f5"; ctx.fillRect(0,0,1024,576);
-            ctx.strokeStyle = "#b30000"; ctx.lineWidth = 20; ctx.strokeRect(0,0,1024,576);
-            ctx.fillStyle = "#b30000"; ctx.font = "bold 70px Arial"; ctx.textAlign = "center"; ctx.fillText("HƯỚNG DẪN THAM QUAN", 512, 100);
-            ctx.fillStyle = "#333"; ctx.font = "30px Arial"; ctx.textAlign = "left";
-            const lines = ["1. Đi bộ vào các cổng để tham quan từng phòng.", "2. Dùng phím W, A, S, D, nút ảo ( điên thoại ) để di chuyển.", "3. Kéo chuột để xoay góc nhìn.", "4. Bấm vào tranh để xem thông tin chi tiết.", "5. Bên phải là phòng Đấu tranh bảo vệ biên giới phía Tây Nam.", "6. Đằng sau là phòng Đấu tranh bảo vệ biên giới phía Bắc.","7. Bên trái là phòng Đấu tranh bảo vệ Biển Đông."];
-            let y = 170; lines.forEach(line => { ctx.fillText(line, 100, y); y += 60; });
+            
+            const grd = ctx.createLinearGradient(0, 0, 1024, 576);
+            grd.addColorStop(0, "#ffffff"); grd.addColorStop(1, "#e6e6e6");
+            ctx.fillStyle = grd; ctx.fillRect(0,0,1024,576);
+            
+            ctx.strokeStyle = "#8B0000"; ctx.lineWidth = 20; ctx.strokeRect(10,10,1004,556);
+            ctx.fillStyle = "#8B0000"; ctx.font = "bold 70px 'Segoe UI'"; ctx.textAlign = "center"; ctx.fillText("HƯỚNG DẪN THAM QUAN", 512, 100);
+            
+            ctx.fillStyle = "#222"; ctx.font = "32px 'Segoe UI'"; ctx.textAlign = "left";
+            const lines = [
+                "1. Di chuyển bằng phím W, A, S, D hoặc Nút ảo.",
+                "2. Kéo chuột/vuốt màn hình để xoay góc nhìn.",
+                "3. Bấm vào tranh/video để xem chi tiết.",
+                "----------------------------------------",
+                "• Phía bên phải: Phòng Đấu tranh bảo vệ biên giới phía Tây Nam.",
+                "• Phía đằng sau: Phòng Đấu tranh bảo vệ biên giới phía Bắc.",
+                "• Phía bên trái: Phòng Đấu tranh bảo vệ Biển Đông."
+            ];
+            let y = 180; 
+            lines.forEach(line => { ctx.fillText(line, 80, y); y += 55; });
+            
             const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace; return tex;
         }
+
         function createCaptionMesh(text, width) {
+            const w = 512; 
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
-            const w = 1024; 
-            const fontSize = 42;
-            const font = "600 " + fontSize + "px 'Segoe UI', Arial";
+            const fontSize = 28;
+            const font = "600 " + fontSize + "px 'Segoe UI'";
             tempCtx.font = font;
 
             const words = text.split(' ');
-            let lines = [];
-            let currentLine = words[0];
-            const maxWidth = w - 80;
+            let lines = []; let currentLine = words[0];
+            const maxWidth = w - 40;
 
             for (let i = 1; i < words.length; i++) {
                 const word = words[i];
                 const width = tempCtx.measureText(currentLine + " " + word).width;
-                if (width < maxWidth) {
-                    currentLine += " " + word;
-                } else {
-                    lines.push(currentLine);
-                    currentLine = word;
-                }
+                if (width < maxWidth) currentLine += " " + word;
+                else { lines.push(currentLine); currentLine = word; }
             }
             lines.push(currentLine);
 
             const lineHeight = fontSize * 1.4;
-            const h = (lines.length * lineHeight) + 100; 
+            const h = (lines.length * lineHeight) + 50; 
 
             const canvas = document.createElement('canvas');
-            canvas.width = w;
-            canvas.height = h;
+            canvas.width = w; canvas.height = h;
             const ctx = canvas.getContext('2d');
 
-            ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+            ctx.fillStyle = "rgba(255, 255, 255, 0.9)"; 
             ctx.fillRect(0, 0, w, h);
-            ctx.strokeStyle = "#888"; 
-            ctx.lineWidth = 12; 
-            ctx.strokeRect(6, 6, w - 12, h - 12);
+            ctx.strokeStyle = "#333"; ctx.lineWidth = 4; ctx.strokeRect(2, 2, w-4, h-4);
 
-            ctx.font = font;
-            ctx.fillStyle = "#222";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
+            ctx.font = font; ctx.fillStyle = "#111"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
             const startY = (h - (lines.length * lineHeight)) / 2 + (lineHeight / 2);
             for (let i = 0; i < lines.length; i++) {
@@ -471,49 +446,96 @@
             tex.minFilter = THREE.LinearFilter;
             
             const meshHeight = width * (h / w); 
-
             const mesh = new THREE.Mesh(
                 new THREE.PlaneGeometry(width, meshHeight), 
-                new THREE.MeshBasicMaterial({ map: tex, transparent: true })
+                new THREE.MeshStandardMaterial({ map: tex, transparent: true, emissive: 0xffffff, emissiveIntensity: 0.2 })
             );
-            
             mesh.userData = { height: meshHeight }; 
-            
             return mesh;
         }
-        function buildRoomMesh(width, depth, height, isLobby) {
-            const color = isLobby ? '#dddddd' : '#fffff0';
-            const wallMat = new THREE.MeshBasicMaterial({ map: createWallTexture(color), side: THREE.DoubleSide });
-            const floorMat = new THREE.MeshBasicMaterial({ map: createFloorTexture(isLobby) });
-            const ceilMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
 
+        // --- HÀM XÂY DỰNG PHÒNG VỚI ÁNH SÁNG STUDIO (SIÊU SÁNG, KHÔNG MỜ) ---
+        function buildRoomMesh(width, depth, height, isLobby) {
+            // 1. CHẤT LIỆU
+            const wallMat = new THREE.MeshStandardMaterial({ map: createWallTexture(), roughness: 0.5, side: THREE.DoubleSide });
+            const floorMat = new THREE.MeshStandardMaterial({ map: createFloorTexture(), roughness: 0.8, metalness: 0.1 });
+            // Trần nhà tự phát sáng mạnh
+            const ceilMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
+
+            // 2. HÌNH HỌC
             const floor = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), floorMat);
-            floor.rotation.x = -Math.PI / 2; currentRoomGroup.add(floor);
+            floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; 
+            currentRoomGroup.add(floor);
+
             const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), ceilMat);
-            ceiling.rotation.x = Math.PI / 2; ceiling.position.y = height; currentRoomGroup.add(ceiling);
-            const front = new THREE.Mesh(new THREE.PlaneGeometry(width, height), wallMat);
-            front.position.z = -depth/2; front.position.y = height/2; currentRoomGroup.add(front);
-            const back = new THREE.Mesh(new THREE.PlaneGeometry(width, height), wallMat);
-            back.position.z = depth/2; back.position.y = height/2; back.rotation.y = Math.PI; currentRoomGroup.add(back);
-            const left = new THREE.Mesh(new THREE.PlaneGeometry(depth, height), wallMat);
-            left.position.x = -width/2; left.position.y = height/2; left.rotation.y = Math.PI/2; currentRoomGroup.add(left);
-            const right = new THREE.Mesh(new THREE.PlaneGeometry(depth, height), wallMat);
-            right.position.x = width/2; right.position.y = height/2; right.rotation.y = -Math.PI/2; currentRoomGroup.add(right);
+            ceiling.rotation.x = Math.PI / 2; ceiling.position.y = height; 
+            currentRoomGroup.add(ceiling);
+
+            const createWall = (w, h, x, y, z, ry) => {
+                const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallMat);
+                mesh.position.set(x, y, z); mesh.rotation.y = ry;
+                mesh.receiveShadow = true; mesh.castShadow = true;   
+                currentRoomGroup.add(mesh);
+            };
+            createWall(width, height, 0, height/2, -depth/2, 0); 
+            createWall(width, height, 0, height/2, depth/2, Math.PI); 
+            createWall(depth, height, -width/2, height/2, 0, Math.PI/2); 
+            createWall(depth, height, width/2, height/2, 0, -Math.PI/2);
+
+            // 3. ÁNH SÁNG (LIGHTING) - FULL POWER
+            
+            // A. Ánh sáng nền (Ambient): Tăng cực mạnh
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            currentRoomGroup.add(ambientLight);
+
+            // B. Đèn chính (Directional Light): Đèn mặt trời nhân tạo
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            dirLight.position.set(0, 500, 0); 
+            dirLight.target.position.set(0, 0, 0); 
+            
+            dirLight.castShadow = true;
+            // Mở rộng vùng đổ bóng
+            const shadowSize = 1000;
+            dirLight.shadow.camera.left = -shadowSize;
+            dirLight.shadow.camera.right = shadowSize;
+            dirLight.shadow.camera.top = shadowSize;
+            dirLight.shadow.camera.bottom = -shadowSize;
+            dirLight.shadow.mapSize.width = 2048; 
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.bias = -0.0005;
+            
+            currentRoomGroup.add(dirLight);
+            currentRoomGroup.add(dirLight.target);
+
+            // C. Đèn bổ trợ (Hemisphere)
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.5);
+            currentRoomGroup.add(hemiLight);
         }
 
         function createPortal(x, z, rotY, label, color, targetRoomId) {
-            const frame = new THREE.Mesh(new THREE.BoxGeometry(160, 240, 20), new THREE.MeshBasicMaterial({ color: 0x222222 }));
-            frame.position.set(x, 120, z); frame.rotation.y = rotY; currentRoomGroup.add(frame);
+            // Khung cổng
+            const frame = new THREE.Mesh(
+                new THREE.BoxGeometry(160, 240, 20), 
+                new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 })
+            );
+            frame.position.set(x, 120, z); frame.rotation.y = rotY; 
+            frame.castShadow = true; 
+            frame.receiveShadow = true;
+            currentRoomGroup.add(frame);
 
             const glowCanvas = document.createElement('canvas'); glowCanvas.width = 64; glowCanvas.height = 64;
             const ctx = glowCanvas.getContext('2d');
             const grd = ctx.createLinearGradient(0,0,0,64); grd.addColorStop(0, color); grd.addColorStop(1, "black");
             ctx.fillStyle = grd; ctx.fillRect(0,0,64,64);
-            const portalMesh = new THREE.Mesh(new THREE.PlaneGeometry(140, 220), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(glowCanvas) }));
+            
+            const portalMesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(140, 220), 
+                new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(glowCanvas) }) 
+            );
             portalMesh.position.set(0, 0, 11); frame.add(portalMesh);
+
             const labelMesh = createPortalLabelMesh(label, color, 200);
             const labelY = 120 + (labelMesh.userData.h / 2) + 5;
-            
             labelMesh.position.set(0, labelY, 0); 
             frame.add(labelMesh);
 
@@ -521,21 +543,22 @@
             if(Math.abs(z) > Math.abs(x)) collisionPos.z += (z < 0 ? 50 : -50); else collisionPos.x += (x < 0 ? 50 : -50);
             portals.push({ position: collisionPos, roomId: targetRoomId });
         }
-			window.buildLobby = function() {
+
+        window.buildLobby = function() {
             clearScene();
             currentSceneId = 0;
-            scene.background = new THREE.Color(0x999999);
+            scene.background = new THREE.Color(0x111111); 
             buildRoomMesh(1600, 1600, 500, true);
 
-            const guideMat = new THREE.MeshBasicMaterial({ map: createGuideBoardTexture(), side: THREE.DoubleSide });
+            const guideMat = new THREE.MeshStandardMaterial({ map: createGuideBoardTexture(), side: THREE.DoubleSide, roughness: 0.4 });
             const guideMesh = new THREE.Mesh(new THREE.PlaneGeometry(800, 450), guideMat);
-            guideMesh.position.set(0, 250, 790); guideMesh.rotation.y = Math.PI; currentRoomGroup.add(guideMesh);
+            guideMesh.position.set(0, 250, 790); guideMesh.rotation.y = Math.PI; 
+            guideMesh.castShadow = true;
+            currentRoomGroup.add(guideMesh);
 
             createPortal(-750, 0, Math.PI/2, "1. Đấu tranh bảo vệ biên giới phía Tây Nam", "#b30000", 1);
-            
             createPortal(0, -750, 0, "2. Đấu tranh bảo vệ biên giới phía Bắc", "#006600", 2);
-            
-            createPortal(750, 0, -Math.PI/2, "3. Đấu tranh bảo vệ Biển Đông", "#0000b3", 3);
+            createPortal(750, 0, -Math.PI/2, "3. Đấu tranh bảo vệ Biển Đông	", "#0044cc", 3);
 
             camera.position.set(0, 160, -400); 
             controls.target.set(0, 160, 300); 
@@ -545,7 +568,7 @@
         window.goToRoom = function(id) {
             clearScene();
             currentSceneId = id;
-            scene.background = new THREE.Color(0xffffff);
+            scene.background = new THREE.Color(0x111111);
             
             const roomSize = 850;
             const wallOffset = roomSize / 2;
@@ -565,23 +588,18 @@
                     pos.z = -285 + (i * spacing); 
                     rotY = Math.PI / 2; 
                 } 
-                
                 else if (i < 7) { 
                     let idx = i - 4; 
                     pos.z = -wallOffset; 
                     rotY = 0; 
-                    
                     pos.x = -250 + (idx * 160); 
                 } 
-                
                 else if (i < 11) { 
                     let idx = i - 7; 
                     pos.x = wallOffset; 
                     pos.z = 285 - (idx * spacing); 
                     rotY = -Math.PI / 2; 
                 } 
-                
-
                 else { 
                     let idx = i - 11; 
                     pos.z = wallOffset; 
@@ -590,37 +608,39 @@
                 }
 
                 const frameW = 140; const frameH = 100;
-                const frame = new THREE.Mesh(new THREE.BoxGeometry(frameW+6, frameH+6, 2), new THREE.MeshBasicMaterial({ color: 0x5c4033 }));
-                frame.position.set(pos.x, pos.y, pos.z); frame.rotation.y = rotY; frame.translateZ(4); currentRoomGroup.add(frame);
+                const frameMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.4, metalness: 0.1 });
+                const frame = new THREE.Mesh(new THREE.BoxGeometry(frameW+8, frameH+8, 4), frameMat);
+                frame.position.set(pos.x, pos.y, pos.z); frame.rotation.y = rotY; frame.translateZ(4); 
+                frame.castShadow = true; 
+                frame.receiveShadow = true;
+                currentRoomGroup.add(frame);
 
                 let material;
                 if (item.type === 'video') {
                     if (item.thumb) {
                         const thumbTex = new THREE.TextureLoader().load(item.thumb);
                         thumbTex.colorSpace = THREE.SRGBColorSpace;
-                        material = new THREE.MeshBasicMaterial({ map: thumbTex });
+                        material = new THREE.MeshStandardMaterial({ map: thumbTex, roughness: 0.2 });
                     } else {
-                        material = new THREE.MeshBasicMaterial({ color: 0x333333 });
+                        material = new THREE.MeshStandardMaterial({ color: 0x222222 });
                     }
                 } 
                 else { 
                     const tex = new THREE.TextureLoader().load(item.src); 
                     tex.colorSpace = THREE.SRGBColorSpace; 
-                    material = new THREE.MeshBasicMaterial({ map: tex }); 
+                    material = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.2 }); 
                 }
                 
                 const mesh = new THREE.Mesh(new THREE.PlaneGeometry(frameW, frameH), material);
-                mesh.position.copy(frame.position); mesh.rotation.copy(frame.rotation); mesh.translateZ(1.5); 
+                mesh.position.copy(frame.position); mesh.rotation.copy(frame.rotation); mesh.translateZ(2.1); 
                 mesh.userData = item; clickableObjects.push(mesh); currentRoomGroup.add(mesh);
 
                 if(item.desc) {
                     const cap = createCaptionMesh(item.desc, frameW);
                     cap.position.copy(mesh.position); 
                     cap.rotation.copy(mesh.rotation); 
-                    
                     const capHeight = cap.userData.height || 40; 
-                    cap.position.y -= (frameH/2 + capHeight/2 + 10); 
-                    
+                    cap.position.y -= (frameH/2 + capHeight/2 + 15); 
                     cap.translateZ(0.2); 
                     currentRoomGroup.add(cap);
                 }
@@ -633,7 +653,12 @@
 
         function clearScene() {
             clickableObjects = []; portals = [];
-            while(currentRoomGroup.children.length > 0){ const obj = currentRoomGroup.children[0]; currentRoomGroup.remove(obj); if(obj.geometry) obj.geometry.dispose(); if(obj.material) obj.material.dispose(); }
+            while(currentRoomGroup.children.length > 0){ 
+                const obj = currentRoomGroup.children[0]; 
+                currentRoomGroup.remove(obj); 
+                if(obj.geometry) obj.geometry.dispose(); 
+                if(obj.material) obj.material.dispose(); 
+            }
         }
 
         window.openZoom = function(data) {
