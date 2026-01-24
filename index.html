@@ -358,7 +358,7 @@
             ctx.strokeStyle = "#b30000"; ctx.lineWidth = 20; ctx.strokeRect(0,0,1024,576);
             ctx.fillStyle = "#b30000"; ctx.font = "bold 70px Arial"; ctx.textAlign = "center"; ctx.fillText("HƯỚNG DẪN THAM QUAN", 512, 100);
             ctx.fillStyle = "#333"; ctx.font = "30px Arial"; ctx.textAlign = "left";
-            const lines = ["1. Đi bộ vào các cổng để tham quan từng phòng.", "2. Sử dụng phím W, A, S, D để di chuyển.", "3. Kéo chuột để xoay góc nhìn.", "4. Bấm vào tranh để xem thông tin chi tiết.", "5. Bên phải là phòng Đấu tranh bảo vệ biên giới phía Tây Nam.", "6. Bên trái là phòng Đấu tranh bảo vệ Biển Đông.","7. Đằng sau là phòng Đấu tranh bảo vệ biên giới phía Bắc."];
+            const lines = ["1. Đi bộ vào các cổng để tham quan từng phòng.", "2. Sử dụng phím W, A, S, D để di chuyển.", "3. Kéo chuột để xoay góc nhìn.", "4. Bấm vào tranh để xem thông tin chi tiết.", "5. Bên phải là phòng Đấu tranh bảo vệ biên giới phía Tây Nam.", "6. Đằng sau là phòng Đấu tranh bảo vệ biên giới phía Bắc.","7. Bên trái là phòng Đấu tranh bảo vệ Biển Đông."];
             let y = 170; lines.forEach(line => { ctx.fillText(line, 100, y); y += 60; });
             const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace; return tex;
         }
