@@ -407,8 +407,10 @@
             const w = 512; 
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
-            const fontSize = 20;
-            const font = "600 " + fontSize + "px 'Segoe UI'";
+            
+            // 1. Tăng độ đậm của chữ (700 -> bold)
+            const fontSize = 23; 
+            const font = "700 " + fontSize + "px 'Segoe UI'";
             tempCtx.font = font;
 
             const words = text.split(' ');
@@ -424,17 +426,22 @@
             lines.push(currentLine);
 
             const lineHeight = fontSize * 1.4;
-            const h = (lines.length * lineHeight) + 50; 
+            const h = (lines.length * lineHeight) + 60; 
 
             const canvas = document.createElement('canvas');
             canvas.width = w; canvas.height = h;
             const ctx = canvas.getContext('2d');
 
-            ctx.fillStyle = "rgba(255, 255, 255, 0.9)"; 
+            // Nền trắng
+            ctx.fillStyle = "rgba(255, 255, 255, 0.95)"; 
             ctx.fillRect(0, 0, w, h);
-            ctx.strokeStyle = "#333"; ctx.lineWidth = 4; ctx.strokeRect(2, 2, w-4, h-4);
+            // Viền đen
+            ctx.strokeStyle = "#000000"; ctx.lineWidth = 6; ctx.strokeRect(3, 3, w-6, h-6);
 
-            ctx.font = font; ctx.fillStyle = "#111"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            // 2. Chỉnh màu chữ thành ĐEN TUYỀN (#000000)
+            ctx.font = font; 
+            ctx.fillStyle = "#000000"; 
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
             const startY = (h - (lines.length * lineHeight)) / 2 + (lineHeight / 2);
             for (let i = 0; i < lines.length; i++) {
@@ -446,10 +453,14 @@
             tex.minFilter = THREE.LinearFilter;
             
             const meshHeight = width * (h / w); 
+            
+            // 3. Sử dụng MeshBasicMaterial: Loại này không chịu ảnh hưởng của ánh sáng/bóng đổ
+            // Giúp chữ luôn hiển thị đúng màu đen thiết kế, không bị lóa hay bạc màu.
             const mesh = new THREE.Mesh(
                 new THREE.PlaneGeometry(width, meshHeight), 
-                new THREE.MeshStandardMaterial({ map: tex, transparent: true, emissive: 0xffffff, emissiveIntensity: 0.2 })
+                new THREE.MeshBasicMaterial({ map: tex, transparent: true })
             );
+            
             mesh.userData = { height: meshHeight }; 
             return mesh;
         }
